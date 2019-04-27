@@ -23,6 +23,8 @@ namespace AMQRR.Processor
 
         static void Main(string[] args)
         {
+            Console.Title = "Processor";
+
             _mqSession = new MqSession(Url.BROKER_URL);
             
             // setup order-post listener
