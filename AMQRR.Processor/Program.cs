@@ -9,6 +9,7 @@ using AMQRR.Common;
 using AMQRR.Common.Configuration;
 using AMQRR.Common.Models;
 using AMQRR.Common.MQ;
+using AMQRR.Processor.Handlers;
 using Apache.NMS;
 using Apache.NMS.Util;
 using Newtonsoft.Json;
@@ -17,7 +18,6 @@ namespace AMQRR.Processor
 {
     class Program
     {
-        private const int HTTP_TIMEOUT_SECONDS = 20;
         private static int _sleepMs = 10;
         private static MqSession _mqSession;
 
@@ -27,10 +27,9 @@ namespace AMQRR.Processor
 
             _mqSession = new MqSession(Url.BROKER_URL);
             
-            // setup order-post listener
-            var orderPostQueue = SessionUtil.GetDestination(_mqSession.Session, Queue.API_ORDERS_POST);
-            var orderPostConsumer = _mqSession.Session.CreateConsumer(orderPostQueue);
-            orderPostConsumer.Listener += OnOrderPostReceived;
+            // setup listeners
+            CreateConsumer(Queue.API_ORDERS_POST).Listener += new Orders(_mqSession).OnOrderPostReceived;
+            CreateConsumer(Queue.API_ORDERS_GET).Listener += new Orders(_mqSession).OnOrderGetReceived;
 
             // main loop
             while (true)
@@ -38,29 +37,12 @@ namespace AMQRR.Processor
                 Thread.Sleep(_sleepMs);
             }
         }
-        
-        // Handlers
-        private static void OnOrderPostReceived(IMessage message)
+
+        private static IMessageConsumer CreateConsumer(string queueName)
         {
-            var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
-            var textMessage = (ITextMessage) message;
-            var replyQueue = textMessage.NMSReplyTo;
-            var correlationId = textMessage.NMSCorrelationID;
-
-            var order = JsonConvert.DeserializeObject<Order>(textMessage.Text);
-
-            Console.WriteLine($"OrderId={order.OrderId}, Customer={order.Customer}");
-
-            using (var producer = _mqSession.Session.CreateProducer(replyQueue))
-            {
-                var serialized = JsonConvert.SerializeObject(order);
-                var replyMessage = _mqSession.Session.CreateTextMessage(textMessage.Text);
-                replyMessage.NMSCorrelationID = correlationId;
-                replyMessage.NMSTimeToLive = timeout;
-
-                producer.Send(replyMessage);
-            }
-
+            var queue = SessionUtil.GetDestination(_mqSession.Session, queueName);
+            var consumer = _mqSession.Session.CreateConsumer(queue);
+            return consumer;
         }
     }
 }
