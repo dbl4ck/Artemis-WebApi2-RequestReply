@@ -50,6 +50,7 @@
     <Compile Include="Configuration\Queue.cs" />
     <Compile Include="Configuration\Url.cs" />
     <Compile Include="Factories\RandomOrderFactory.cs" />
+    <Compile Include="Generators\TimestampGenerator.cs" />
     <Compile Include="Models\Order.cs" />
     <Compile Include="Models\OrderLine.cs" />
     <Compile Include="MQ\MqSession.cs" />
