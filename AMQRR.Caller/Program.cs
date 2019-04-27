@@ -20,8 +20,15 @@ namespace AMQRR.Caller
     {
         public static string _baseUri = Url.API_URL;
 
+        public static int _customerId;
+
         static void Main(string[] args)
         {
+            // generate a random customerId
+            var r = new Random();
+            _customerId = r.Next(10000, 100000);
+            Console.Title = $"Caller: (CustomerId={_customerId}";
+
             var stopwatch = new Stopwatch();
             var orderFactory = new RandomOrderFactory();
             var httpClient = new HttpClient() {BaseAddress = new Uri(_baseUri)};
@@ -29,15 +36,18 @@ namespace AMQRR.Caller
             while (true)
             {
                 var order = orderFactory.Create();
+                order.Customer = _customerId;
+
                 var serialised = JsonConvert.SerializeObject(order,Formatting.Indented);
                 var stringContent = new StringContent(serialised, Encoding.UTF8,"application/json");
-                
-                stopwatch.Start();
+
+                stopwatch.Restart();
 
                 var post = httpClient.PostAsync("/api/orders", stringContent);
                 post.Wait();
 
                 stopwatch.Stop();
+                
 
                 if (!post.Result.IsSuccessStatusCode)
                 {
@@ -49,8 +59,8 @@ namespace AMQRR.Caller
                 var responseOrder = JsonConvert.DeserializeObject<Order>(responseBody.Result);
                 
                 Console.WriteLine(
-                    $"Sent Order {order.OrderId}, " + 
-                         $"Received Order {responseOrder.OrderId} " + 
+                    $"Sent OrderId {order.OrderId} for Customer {order.Customer}, " + 
+                         $"Received OrderId {responseOrder.OrderId} for Customer {responseOrder.Customer} " + 
                          $"(roundtrip: {stopwatch.ElapsedMilliseconds} ms)");
                 
                 Thread.Sleep(1000);
