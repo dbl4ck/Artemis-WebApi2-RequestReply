@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 using AMQRR.Common;
 using AMQRR.Common;
 using AMQRR.Common.Configuration;
+using AMQRR.Common.Models;
 using AMQRR.Common.MQ;
 using Apache.NMS;
 using Apache.NMS.Util;
+using Newtonsoft.Json;
 
 namespace AMQRR.Processor
 {
@@ -33,7 +35,6 @@ namespace AMQRR.Processor
             {
                 Thread.Sleep(_sleepMs);
             }
-
         }
         
         // Handlers
@@ -44,10 +45,13 @@ namespace AMQRR.Processor
             var replyQueue = textMessage.NMSReplyTo;
             var correlationId = textMessage.NMSCorrelationID;
 
-            Console.WriteLine(textMessage.Text);
+            var order = JsonConvert.DeserializeObject<Order>(textMessage.Text);
+
+            Console.WriteLine($"OrderId={order.OrderId}, Customer={order.Customer}");
 
             using (var producer = _mqSession.Session.CreateProducer(replyQueue))
             {
+                var serialized = JsonConvert.SerializeObject(order);
                 var replyMessage = _mqSession.Session.CreateTextMessage(textMessage.Text);
                 replyMessage.NMSCorrelationID = correlationId;
                 replyMessage.NMSTimeToLive = timeout;
