@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
@@ -11,6 +12,7 @@ using AMQRR.Common.Configuration;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Web;
+using AMQRR.Common.Models;
 
 namespace AMQRR.Caller
 {
@@ -20,6 +22,7 @@ namespace AMQRR.Caller
 
         static void Main(string[] args)
         {
+            var stopwatch = new Stopwatch();
             var orderFactory = new RandomOrderFactory();
             var httpClient = new HttpClient() {BaseAddress = new Uri(_baseUri)};
 
@@ -28,17 +31,28 @@ namespace AMQRR.Caller
                 var order = orderFactory.Create();
                 var serialised = JsonConvert.SerializeObject(order,Formatting.Indented);
                 var stringContent = new StringContent(serialised, Encoding.UTF8,"application/json");
-
-                Console.WriteLine(serialised);
+                
+                stopwatch.Start();
 
                 var post = httpClient.PostAsync("/api/orders", stringContent);
                 post.Wait();
+
+                stopwatch.Stop();
 
                 if (!post.Result.IsSuccessStatusCode)
                 {
                     throw new HttpException($"{post.Result.StatusCode} - {post.Result.ReasonPhrase}");
                 }
 
+                var responseBody = post.Result.Content.ReadAsStringAsync();
+                responseBody.Wait();
+                var responseOrder = JsonConvert.DeserializeObject<Order>(responseBody.Result);
+                
+                Console.WriteLine(
+                    $"Sent Order {order.OrderId}, " + 
+                         $"Received Order {responseOrder.OrderId} " + 
+                         $"(roundtrip: {stopwatch.ElapsedMilliseconds} ms)");
+                
                 Thread.Sleep(1000);
             }
 
