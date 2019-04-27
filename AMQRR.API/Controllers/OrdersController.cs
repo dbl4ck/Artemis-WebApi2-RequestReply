@@ -42,7 +42,44 @@ namespace AMQRR.API.Controllers
         // GET: api/Orders/5
         public Order Get(int id)
         {
-            throw new NotImplementedException();
+            var queueName = Queue.API_ORDERS_GET;
+            var replyQueueName = Queue.API_ORDERS_GET_REPLY;
+            var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
+            var correlationId = Request.GetCorrelationId().ToString();
+            var selector = $"JMSCorrelationID='{correlationId}'";
+
+            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queueName);
+            IDestination replyQueue = SessionUtil.GetDestination(_mqService.Session, replyQueueName);
+
+            using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
+            {
+                string serialized = id.ToString();
+                ITextMessage message = _mqService.Session.CreateTextMessage(serialized);
+                message.NMSTimeToLive = timeout;
+                message.NMSReplyTo = replyQueue;
+                message.NMSCorrelationID = correlationId;
+
+                producer.Send(message);
+            }
+
+            using (var consumer = _mqService.Session.CreateConsumer(replyQueue, selector))
+            {
+                ITextMessage message = (ITextMessage)consumer.Receive(timeout);
+                if (message == null)
+                    throw new NullReferenceException("Received blank message, this dould be due to a request-reply timeout.");
+
+                var serialized = message.Text;
+
+                if (message.NMSCorrelationID != correlationId)
+                {
+                    throw new InvalidOperationException("CorrelationId Mismatch. Aborting.");
+                }
+                else
+                {
+                    return JsonConvert.DeserializeObject<Order>(serialized);
+                }
+            }
+
         }
 
         // POST: api/Orders
