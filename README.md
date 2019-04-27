@@ -1,5 +1,6 @@
 # Artemis-WebApi2-RequestReply
-Apache ActiveMQ Artemis + ASP.NET WebAPI2 to model a Request-Reply / Request-Response Enterprise Architecture Pattern
+A proof of concept Apache ActiveMQ Artemis + ASP.NET WebAPI2 to model a 
+[Brokered Request-Reply Enterprise Architecture Pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html)
 
 # Sub-Project Overview
 
