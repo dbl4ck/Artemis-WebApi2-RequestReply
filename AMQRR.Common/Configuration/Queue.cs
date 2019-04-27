@@ -9,5 +9,6 @@ namespace AMQRR.Common.Configuration
     public class Queue
     {
         public const string API_ORDERS_POST = "api.orders.post";
+        public const string API_ORDERS_POST_REPLY = API_ORDERS_POST + ".reply";
     }
 }

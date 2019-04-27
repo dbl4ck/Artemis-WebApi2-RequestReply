@@ -48,28 +48,31 @@ namespace AMQRR.API.Controllers
         // POST: api/Orders
         public Order Post([FromBody] Order order)
         {
-            var queue = Queue.API_ORDERS_POST;
+            var queueName = Queue.API_ORDERS_POST;
+            var replyQueueName = Queue.API_ORDERS_POST_REPLY;
             var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
             var correlationId = Request.GetCorrelationId().ToString();
+            var selector = $"JMSCorrelationID='{correlationId}'";
 
-            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queue);
-            IDestination responseQueue = _mqService.Session.CreateTemporaryQueue();
-            
+            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queueName);
+            IDestination replyQueue = SessionUtil.GetDestination(_mqService.Session, replyQueueName);
+
             using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
             {
                 string serialized = JsonConvert.SerializeObject(order);
                 ITextMessage message = _mqService.Session.CreateTextMessage(serialized);
                 message.NMSTimeToLive = timeout;
-                message.NMSReplyTo = responseQueue;
+                message.NMSReplyTo = replyQueue;
                 message.NMSCorrelationID = correlationId;
 
                 producer.Send(message);
             }
             
-            using (var consumer = _mqService.Session.CreateConsumer(responseQueue))
+            using (var consumer = _mqService.Session.CreateConsumer(replyQueue, selector))
             {
                 ITextMessage message = (ITextMessage) consumer.Receive(timeout);
-                if (message == null) throw new NullReferenceException("Received blank message.");
+                if (message == null)
+                    throw new NullReferenceException("Received blank message, this dould be sue to a request-reply timeout.");
 
                 var serialized = message.Text;
 
