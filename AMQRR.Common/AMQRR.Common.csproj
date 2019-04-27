@@ -47,7 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="Configuration\Queue.cs" />
     <Compile Include="Configuration\Url.cs" />
     <Compile Include="Factories\RandomOrderFactory.cs" />
     <Compile Include="Models\Order.cs" />
