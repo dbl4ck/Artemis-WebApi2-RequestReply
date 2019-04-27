@@ -7,6 +7,7 @@ using System.Web;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using AMQRR.API.Services.Singleton;
+using AMQRR.Common.Configuration;
 using AMQRR.Common.Models;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -47,10 +48,11 @@ namespace AMQRR.API.Controllers
         // POST: api/Orders
         public Order Post([FromBody] Order order)
         {
+            var queue = Queue.API_ORDERS_POST;
             var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
             var correlationId = Request.GetCorrelationId().ToString();
 
-            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session,"my.queue.orders.post");
+            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queue);
             IDestination responseQueue = _mqService.Session.CreateTemporaryQueue();
             
             using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
@@ -63,10 +65,12 @@ namespace AMQRR.API.Controllers
 
                 producer.Send(message);
             }
-
+            
             using (var consumer = _mqService.Session.CreateConsumer(responseQueue))
             {
                 ITextMessage message = (ITextMessage) consumer.Receive(timeout);
+                if (message == null) throw new NullReferenceException("Received blank message.");
+
                 var serialized = message.Text;
 
                 if (message.NMSCorrelationID != correlationId)
