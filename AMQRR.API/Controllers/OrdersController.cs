@@ -72,7 +72,7 @@ namespace AMQRR.API.Controllers
             {
                 ITextMessage message = (ITextMessage) consumer.Receive(timeout);
                 if (message == null)
-                    throw new NullReferenceException("Received blank message, this dould be sue to a request-reply timeout.");
+                    throw new NullReferenceException("Received blank message, this dould be due to a request-reply timeout.");
 
                 var serialized = message.Text;
 
