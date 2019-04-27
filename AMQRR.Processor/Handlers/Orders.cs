@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AMQRR.Common.Factories;
+using AMQRR.Common.Generators;
 using AMQRR.Common.Models;
 using Apache.NMS;
 using Newtonsoft.Json;
@@ -17,10 +18,12 @@ namespace AMQRR.Processor.Handlers
         private const int HTTP_TIMEOUT_SECONDS = 20;
 
         private MqSession _mqSession;
+        private TimestampGenerator _timestamp;
 
         public Orders(MqSession mqSession)
         {
             _mqSession = mqSession;
+            _timestamp = new TimestampGenerator();
         }
 
         public void OnOrderPostReceived(IMessage message)
@@ -32,7 +35,7 @@ namespace AMQRR.Processor.Handlers
 
             var order = JsonConvert.DeserializeObject<Order>(textMessage.Text);
 
-            Console.WriteLine($"POST OrderId={order.OrderId}, Customer={order.Customer}");
+            Console.WriteLine($"{_timestamp.Generate()} POST OrderId={order.OrderId}, Customer={order.Customer}");
 
             using (var producer = _mqSession.Session.CreateProducer(replyQueue))
             {
@@ -54,7 +57,7 @@ namespace AMQRR.Processor.Handlers
 
             var orderId = textMessage.Text;
 
-            Console.WriteLine($"GET OrderId={orderId}");
+            Console.WriteLine($"{_timestamp.Generate()} GET OrderId={orderId}");
 
             var order = new RandomOrderFactory().Create();
             order.OrderId = Convert.ToInt32(orderId);

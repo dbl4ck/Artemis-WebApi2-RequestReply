@@ -24,6 +24,7 @@ namespace AMQRR.Processor
         static void Main(string[] args)
         {
             Console.Title = "Processor";
+            Console.WindowWidth = 100;
 
             _mqSession = new MqSession(Url.BROKER_URL);
             

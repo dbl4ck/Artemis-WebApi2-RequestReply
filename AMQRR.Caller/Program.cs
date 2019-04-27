@@ -28,6 +28,8 @@ namespace AMQRR.Caller
             var r = new Random();
             _customerId = r.Next(10000, 100000);
             Console.Title = $"Caller: (CustomerId={_customerId}";
+            Console.WindowHeight = 6;
+            Console.WindowWidth = 100;
 
             var stopwatch = new Stopwatch();
             var orderFactory = new RandomOrderFactory();
