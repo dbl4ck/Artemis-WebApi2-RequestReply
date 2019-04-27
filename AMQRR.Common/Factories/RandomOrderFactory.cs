@@ -37,7 +37,7 @@ namespace AMQRR.Common.Factories
         {
             var orderLines = new List<OrderLine>();
 
-            for(var lineSeq =1; lineSeq<count; lineSeq++)
+            for(var lineSeq =0; lineSeq <= count; lineSeq++)
             {
                 var orderLine = new OrderLine
                 {
@@ -48,6 +48,7 @@ namespace AMQRR.Common.Factories
                     UnitPrice = _random.Next(10, 100) / 4,
                     Quantity = _random.Next(1,7)
                 };
+
                 orderLines.Add(orderLine);
             };
 
