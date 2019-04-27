@@ -13,7 +13,7 @@ namespace AMQRR.API.Services.Singleton
         // static 
         private static MqService _mqService;
 
-        private static MqService GetInstance() => _mqService ?? (_mqService = new MqService());
+        public static MqService GetInstance() => _mqService ?? (_mqService = new MqService());
 
         // instance
         private MqSession _mqSession;
