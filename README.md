@@ -6,7 +6,7 @@ A proof of concept Apache ActiveMQ Artemis + ASP.NET WebAPI2 to model a
 
 ![brokered request-reply enterprise pattern](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/Docs/Media/request-reply.png)
 
-# Look at it go!
+# This Is It In Action
 
 ![animation of get/post orders](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/Docs/Media/post-and-get-ani.gif.gif)
 
@@ -54,7 +54,7 @@ Contains shared models and libraries primarily for the API and Processor.
 
 [MqSession](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/AMQRR.Common/MQ/MqSession.cs) is used to collate the instantiation of a broker client and is used in both of these projects.
 
-# In Action
+# To Infinity
 
 ### 1 Caller to 3 Processors
 
