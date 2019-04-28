@@ -19,18 +19,17 @@ namespace AMQRR.API.Controllers
 {
     public class OrdersController : MqController
     {
-        private IMqService _mqService;
       
         // default ctor
         public OrdersController()
         {
-            _mqService = Services.Singleton.MqService.GetInstance();
+            MqService = Services.Singleton.MqService.GetInstance();
         }
 
         // dependency injection ctor
         public OrdersController(IMqService mqService)
         {
-            _mqService = mqService;
+            MqService = mqService;
         }
 
         // GET: api/Orders

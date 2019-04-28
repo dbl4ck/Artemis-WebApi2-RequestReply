@@ -21,18 +21,18 @@ namespace AMQRR.API.Base
         private const string ECorrelationIdMismatchAborting = "CorrelationId mismatch.";
         private const string ENullMessage = "Received a null message from the consumer. This could be due to a timeout waiting for a relevant message in a reply queue.";
 
-        protected IMqService _mqService;
+        protected IMqService MqService;
 
         // default ctor
         protected MqController()
         {
-            _mqService = MqService.GetInstance();
+            MqService = Services.Singleton.MqService.GetInstance();
         }
 
         // dependency injection ctor
         protected MqController(IMqService mqService)
         {
-            _mqService = mqService;
+            MqService = mqService;
         }
 
         protected string ExecuteRequestReply(string data, string queueName, string replyQueueName, string correlationId, int timeoutSecs = HTTP_TIMEOUT_SECONDS)
@@ -56,9 +56,9 @@ namespace AMQRR.API.Base
 
         private void Produce(ISession session, string data, IDestination queue, TimeSpan? expiry = null, IDestination replyTo = null, string correlationId = null)
         {
-            using (var producer = _mqService.MqSession.Session.CreateProducer(queue))
+            using (var producer = MqService.MqSession.Session.CreateProducer(queue))
             {
-                var message = _mqService.Session.CreateTextMessage(data);
+                var message = MqService.Session.CreateTextMessage(data);
 
                 if(expiry.HasValue)
                     message.NMSTimeToLive = expiry.Value;
@@ -77,7 +77,7 @@ namespace AMQRR.API.Base
         {
             var selector = new MqFilterGenerator().Add(NMSFilter.JMSCorrelationID, correlationId).ToString();
 
-            using (var consumer = _mqService.Session.CreateConsumer(queue, selector))
+            using (var consumer = MqService.Session.CreateConsumer(queue, selector))
             {
                 var message = (ITextMessage)consumer.Receive(timeout);
 
@@ -92,7 +92,7 @@ namespace AMQRR.API.Base
         }
 
         protected string CorrelationId => Request.GetCorrelationId().ToString();
-        protected ISession Session => _mqService.Session;
-        protected IConnection Connection => _mqService.Connection;
+        protected ISession Session => MqService.Session;
+        protected IConnection Connection => MqService.Connection;
     }
 }
