@@ -2,9 +2,14 @@
 A proof of concept Apache ActiveMQ Artemis + ASP.NET WebAPI2 to model a 
 [Brokered Request-Reply Enterprise Architecture Pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html)
 
-# Obligatory Image
+# Request-Reply Architecture Pattern
 
 ![brokered request-reply enterprise pattern](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/Docs/Media/request-reply.png)
+
+# Look at it go!
+
+![animation of get/post orders](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/Docs/Media/post-and-get-ani.gif.gif)
+
 
 # Sub-Project Overview
 
