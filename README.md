@@ -2,6 +2,10 @@
 A proof of concept Apache ActiveMQ Artemis + ASP.NET WebAPI2 to model a 
 [Brokered Request-Reply Enterprise Architecture Pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html)
 
+# Obligatory Image
+
+![brokered request-reply enterprise pattern](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/Docs/Media/request-reply.png)
+
 # Sub-Project Overview
 
 * **AMQRR.Caller** Console Runnable - POSTS randomly generated *Order* objects at *.API* with a HttpClient and waits for a response.
