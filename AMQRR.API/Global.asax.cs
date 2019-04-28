@@ -7,6 +7,7 @@ using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
 using AMQRR.Common.MQ;
+using WebGrease.Css;
 
 namespace AMQRR.API
 {
@@ -23,5 +24,12 @@ namespace AMQRR.API
             // initialize services
             Services.Singleton.MqService.GetInstance();
         }
+
+        protected void Application_End()
+        {
+            Services.Singleton.MqService.GetInstance().Session.Close();
+            Services.Singleton.MqService.GetInstance().Connection.Close();
+        }
+
     }
 }
