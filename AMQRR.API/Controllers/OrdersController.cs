@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Web;
 using System.Web.Http;
 using System.Web.Http.Controllers;
+using AMQRR.API.Base;
 using AMQRR.API.Services.Singleton;
 using AMQRR.Common.Configuration;
 using AMQRR.Common.Models;
@@ -16,23 +17,22 @@ using Newtonsoft.Json;
 
 namespace AMQRR.API.Controllers
 {
-    public class OrdersController : ApiController
+    public class OrdersController : MqController
     {
         private IMqService _mqService;
-        private const int HTTP_TIMEOUT_SECONDS = 20; // TODO: Use HttpRuntime.ExecutionTimout
-
+      
         // default ctor
         public OrdersController()
         {
             _mqService = Services.Singleton.MqService.GetInstance();
         }
 
-        // di ctor
+        // dependency injection ctor
         public OrdersController(IMqService mqService)
         {
             _mqService = mqService;
         }
-        
+
         // GET: api/Orders
         public IEnumerable<Order> Get()
         {
@@ -44,42 +44,12 @@ namespace AMQRR.API.Controllers
         {
             var queueName = Queue.API_ORDERS_GET;
             var replyQueueName = Queue.API_ORDERS_GET_REPLY;
-            var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
-            var correlationId = Request.GetCorrelationId().ToString();
-            var selector = $"JMSCorrelationID='{correlationId}'";
 
-            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queueName);
-            IDestination replyQueue = SessionUtil.GetDestination(_mqService.Session, replyQueueName);
+            var data = id.ToString();
 
-            using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
-            {
-                string serialized = id.ToString();
-                ITextMessage message = _mqService.Session.CreateTextMessage(serialized);
-                message.NMSTimeToLive = timeout;
-                message.NMSReplyTo = replyQueue;
-                message.NMSCorrelationID = correlationId;
+            var result = ExecuteRequestReply(data, queueName, replyQueueName, CorrelationId);
 
-                producer.Send(message);
-            }
-
-            using (var consumer = _mqService.Session.CreateConsumer(replyQueue, selector))
-            {
-                ITextMessage message = (ITextMessage)consumer.Receive(timeout);
-                if (message == null)
-                    throw new NullReferenceException("Received blank message, this dould be due to a request-reply timeout.");
-
-                var serialized = message.Text;
-
-                if (message.NMSCorrelationID != correlationId)
-                {
-                    throw new InvalidOperationException("CorrelationId Mismatch. Aborting.");
-                }
-                else
-                {
-                    return JsonConvert.DeserializeObject<Order>(serialized);
-                }
-            }
-
+            return JsonConvert.DeserializeObject<Order>(result);
         }
 
         // POST: api/Orders
@@ -87,44 +57,15 @@ namespace AMQRR.API.Controllers
         {
             var queueName = Queue.API_ORDERS_POST;
             var replyQueueName = Queue.API_ORDERS_POST_REPLY;
-            var timeout = TimeSpan.FromSeconds(HTTP_TIMEOUT_SECONDS);
-            var correlationId = Request.GetCorrelationId().ToString();
-            var selector = $"JMSCorrelationID='{correlationId}'";
 
-            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queueName);
-            IDestination replyQueue = SessionUtil.GetDestination(_mqService.Session, replyQueueName);
+            var data = JsonConvert.SerializeObject(order);
 
-            using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
-            {
-                string serialized = JsonConvert.SerializeObject(order);
-                ITextMessage message = _mqService.Session.CreateTextMessage(serialized);
-                message.NMSTimeToLive = timeout;
-                message.NMSReplyTo = replyQueue;
-                message.NMSCorrelationID = correlationId;
+            var result = ExecuteRequestReply(data, queueName, replyQueueName, CorrelationId);
 
-                producer.Send(message);
-            }
-            
-            using (var consumer = _mqService.Session.CreateConsumer(replyQueue, selector))
-            {
-                ITextMessage message = (ITextMessage) consumer.Receive(timeout);
-                if (message == null)
-                    throw new NullReferenceException("Received blank message, this dould be due to a request-reply timeout.");
-
-                var serialized = message.Text;
-
-                if (message.NMSCorrelationID != correlationId)
-                {
-                    throw new InvalidOperationException("CorrelationId Mismatch. Aborting.");
-                }
-                else
-                {
-                    return JsonConvert.DeserializeObject<Order>(serialized);
-                }
-            }
-
-            throw new NotImplementedException();
+            return JsonConvert.DeserializeObject<Order>(result);
         }
+
+        
 
         // PUT: api/Orders/5
         public void Put(int id, [FromBody]string value)
