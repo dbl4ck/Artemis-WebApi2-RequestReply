@@ -37,24 +37,19 @@ namespace AMQRR.API.Base
 
         protected string ExecuteRequestReply(string data, string queueName, string replyQueueName, string correlationId, int timeoutSecs = HTTP_TIMEOUT_SECONDS)
         {
-            string result = null;
             var timeout = TimeSpan.FromSeconds(timeoutSecs);
-
-            IDestination requestQueue = SessionUtil.GetDestination(Session, queueName);
-            IDestination replyQueue = SessionUtil.GetDestination(Session, replyQueueName);
+            var requestQueue = SessionUtil.GetDestination(Session, queueName);
+            var replyQueue = SessionUtil.GetDestination(Session, replyQueueName);
 
             Produce(Session, data, requestQueue, timeout, replyQueue, correlationId);
-            result = Consume(Session, replyQueue, correlationId, timeout);
 
-            return result;
+            return Consume(Session, replyQueue, correlationId, timeout);
         }
 
         protected void ExecutePointToPoint(string data, string queueName, int? expirySecs = null)
         {
-            string result = null;
-            TimeSpan? expiry = expirySecs.HasValue ? (TimeSpan?)TimeSpan.FromSeconds(expirySecs.Value) : null;
-
-            IDestination queue = SessionUtil.GetDestination(Session, queueName);
+            var expiry = expirySecs.HasValue ? (TimeSpan?)TimeSpan.FromSeconds(expirySecs.Value) : null;
+            var queue = SessionUtil.GetDestination(Session, queueName);
             
             Produce(Session, data, queue, expiry);
         }
@@ -84,7 +79,7 @@ namespace AMQRR.API.Base
 
             using (var consumer = _mqService.Session.CreateConsumer(queue, selector))
             {
-                ITextMessage message = (ITextMessage)consumer.Receive(timeout);
+                var message = (ITextMessage)consumer.Receive(timeout);
 
                 if (message == null)
                     throw new TimeoutException(ENullMessage);
