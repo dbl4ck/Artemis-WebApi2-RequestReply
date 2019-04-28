@@ -18,8 +18,8 @@ namespace AMQRR.API.Base
     {
         protected const int HTTP_TIMEOUT_SECONDS = 20; // TODO: Use HttpRuntime.ExecutionTimeout
 
-        private const string ECorrelationIdMismatchAborting = "CorrelationId mismatch. Aborting.";
-        private const string ENoMessageRequestReplyTimeout = "Received a null message from the consumer. This could be due to a request-reply timeout.";
+        private const string ECorrelationIdMismatchAborting = "CorrelationId mismatch.";
+        private const string ENullMessage = "Received a null message from the consumer. This could be due to a timeout waiting for a relevant message in a reply queue.";
 
         protected IMqService _mqService;
 
@@ -35,31 +35,59 @@ namespace AMQRR.API.Base
             _mqService = mqService;
         }
 
-        protected string ExecuteRequestReply(string value, string queueName, string replyQueueName, string correlationId, int timeoutSecs = HTTP_TIMEOUT_SECONDS)
+        protected string ExecuteRequestReply(string data, string queueName, string replyQueueName, string correlationId, int timeoutSecs = HTTP_TIMEOUT_SECONDS)
         {
+            string result = null;
             var timeout = TimeSpan.FromSeconds(timeoutSecs);
-            var selector = new MqFilterGenerator().Add(NMSFilter.JMSCorrelationID, correlationId).ToString();
 
-            IDestination requestQueue = SessionUtil.GetDestination(_mqService.Session, queueName);
-            IDestination replyQueue = SessionUtil.GetDestination(_mqService.Session, replyQueueName);
+            IDestination requestQueue = SessionUtil.GetDestination(Session, queueName);
+            IDestination replyQueue = SessionUtil.GetDestination(Session, replyQueueName);
 
-            using (var producer = _mqService.MqSession.Session.CreateProducer(requestQueue))
+            Produce(Session, data, requestQueue, timeout, replyQueue, correlationId);
+            result = Consume(Session, replyQueue, correlationId, timeout);
+
+            return result;
+        }
+
+        protected void ExecutePointToPoint(string data, string queueName, int? expirySecs = null)
+        {
+            string result = null;
+            TimeSpan? expiry = expirySecs.HasValue ? (TimeSpan?)TimeSpan.FromSeconds(expirySecs.Value) : null;
+
+            IDestination queue = SessionUtil.GetDestination(Session, queueName);
+            
+            Produce(Session, data, queue, expiry);
+        }
+
+        private void Produce(ISession session, string data, IDestination queue, TimeSpan? expiry = null, IDestination replyTo = null, string correlationId = null)
+        {
+            using (var producer = _mqService.MqSession.Session.CreateProducer(queue))
             {
-                //string serialized = JsonConvert.SerializeObject(value);
-                ITextMessage message = _mqService.Session.CreateTextMessage(value);
-                message.NMSTimeToLive = timeout;
-                message.NMSReplyTo = replyQueue;
-                message.NMSCorrelationID = correlationId;
+                var message = _mqService.Session.CreateTextMessage(data);
+
+                if(expiry.HasValue)
+                    message.NMSTimeToLive = expiry.Value;
+
+                if(replyTo != null)
+                    message.NMSReplyTo = replyTo;
+
+                if(correlationId != null)
+                    message.NMSCorrelationID = correlationId;
 
                 producer.Send(message);
             }
+        }
 
-            using (var consumer = _mqService.Session.CreateConsumer(replyQueue, selector))
+        private string Consume(ISession session, IDestination queue, string correlationId, TimeSpan timeout)
+        {
+            var selector = new MqFilterGenerator().Add(NMSFilter.JMSCorrelationID, correlationId).ToString();
+
+            using (var consumer = _mqService.Session.CreateConsumer(queue, selector))
             {
                 ITextMessage message = (ITextMessage)consumer.Receive(timeout);
 
                 if (message == null)
-                    throw new TimeoutException(ENoMessageRequestReplyTimeout);
+                    throw new TimeoutException(ENullMessage);
 
                 if (message.NMSCorrelationID != correlationId)
                     throw new InvalidDataException(ECorrelationIdMismatchAborting);
@@ -68,6 +96,8 @@ namespace AMQRR.API.Base
             }
         }
 
-        public string CorrelationId => Request.GetCorrelationId().ToString();
+        protected string CorrelationId => Request.GetCorrelationId().ToString();
+        protected ISession Session => _mqService.Session;
+        protected IConnection Connection => _mqService.Connection;
     }
 }
