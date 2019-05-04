@@ -36,7 +36,7 @@ A response is expected from each request, containing the same Order & child Orde
 
 This is in turn inherited by [OrdersController](https://github.com/dbl4ck/Artemis-WebApi2-RequestReply/blob/master/AMQRR.API/Controllers/OrdersController.cs) which only has to worry about queue selection and serialization concerns.
 
-*Request-Response* demands a *reply queue* and a *timeout/expiry*, as the external caller will likely be waiting for a response within a standard http timeout (20 secs), waiting any longer would serve no purpose. Broker messages are additionally supplied with an *expiry* to match this, a seperate *reply queue*, and a *correlationID* so that the request can quickly identify the correct reply message to consume when available.
+*Request-Response* demands a *reply queue* and a *timeout/expiry*, as the external caller will likely be waiting for a response within a standard http timeout (20 secs), waiting any longer would serve no purpose. Broker messages are additionally supplied with an *expiry* to match this, a separate *reply queue*, and a *correlationID* so that the request can quickly identify the correct reply message to consume when available.
 
 *Point-To-Point* carries no enforced expiry or reply queue concerns, by definition it only needs to ensure that the message reaches the broker.
 
